@@ -1,0 +1,73 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: echo-backend-dev
+    restart: "no"
+    ports:
+      - "${PORT:-8088}:8088"
+    environment:
+      NODE_ENV: development
+      PORT: 8088
+      MONGODB_URI: mongodb://mongo:27017/echo
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:-}
+      EMAIL_PROVIDER_API_KEY: ${EMAIL_PROVIDER_API_KEY:-}
+      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-60000}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100}
+      VISITOR_HASH_SALT: ${VISITOR_HASH_SALT:-dev-visitor-hash-salt}
+      COOKIE_SIGNING_SECRET: ${COOKIE_SIGNING_SECRET:-dev-cookie-signing-secret}
+    volumes:
+      - .:/app
+      - backend_node_modules:/app/node_modules
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - echo-network
+
+  mongo:
+    image: mongo:7
+    container_name: echo-mongo-dev
+    restart: unless-stopped
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongo_data_dev:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - echo-network
+
+  mongo-express:
+    image: mongo-express:1.0.2-20
+    container_name: echo-mongo-express-dev
+    restart: unless-stopped
+    ports:
+      - "${MONGO_EXPRESS_PORT:-8081}:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USER:-admin}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD:-admin}
+      ME_CONFIG_BASICAUTH: "true"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - echo-network
+
+volumes:
+  mongo_data_dev:
+  backend_node_modules:
+
+networks:
+  echo-network:
+    driver: bridge
