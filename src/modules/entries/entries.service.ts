@@ -60,7 +60,7 @@ export class EntriesService {
     });
 
     // 4. ModerationWorkflow.transition() from null to the resolved status
-    const entryForTransition = { ...entry, status: null };
+    const entryForTransition = { ...entry, status: null } as unknown as Entry;
 
     let action = ModerationAction.AUTO_APPROVED;
     if (decision.status === EntryStatus.REMOVED) {

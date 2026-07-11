@@ -1,6 +1,7 @@
 import { RuleResult } from '@shared/types';
 import { Entry } from '../entries/entries.types';
 import { EntriesRepository } from '../entries/entries.repository';
+import { EntryStatus } from '../entries/entries.constants';
 
 export interface ModerationRule {
   name: string;
@@ -42,7 +43,7 @@ export class DuplicateRule implements ModerationRule {
     if (typeof this.entriesRepository.findByTextAndStatus !== 'function') {
       return RuleResult.PASS;
     }
-    const existing = await this.entriesRepository.findByTextAndStatus(entry.text, 'published');
+    const existing = await this.entriesRepository.findByTextAndStatus(entry.text, EntryStatus.PUBLISHED);
     return existing ? RuleResult.WARN : RuleResult.PASS;
   }
 }

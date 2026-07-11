@@ -303,7 +303,7 @@ export class EntriesRepository {
     };
   }
 
-  async findByTextAndStatus(text: string, status: string): Promise<Entry | null> {
+  async findByTextAndStatus(text: string, status: EntryStatus): Promise<Entry | null> {
     const doc = await EntryModel.findOne({ text, status });
     return doc ? this.mapDocument(doc) : null;
   }
