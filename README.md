@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # echo-backend
 Backend service for Echo — an anonymous platform for sharing wisdom, learning and quotes. Built with Node.js, Express, TypeScript and MongoDB.
 =======
@@ -75,4 +74,3 @@ Features are encapsulated in cohesive business modules under `src/modules/`:
 | `npm test` | Runs the test suite via `Vitest` |
 | `npm run lint` | Runs `ESLint` check on code style |
 | `npm run format` | Standardizes codebase format with `Prettier` |
->>>>>>> 8e08944 (Initial commit)
