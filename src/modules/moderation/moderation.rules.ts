@@ -40,11 +40,25 @@ export class DuplicateRule implements ModerationRule {
 
   async evaluate(entry: Partial<Entry>): Promise<RuleResult> {
     if (!entry.text) return RuleResult.PASS;
-    if (typeof this.entriesRepository.findByTextAndStatus !== 'function') {
-      return RuleResult.PASS;
+
+    const normalize = (t: string) => t.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const normalizedInput = normalize(entry.text);
+
+    if (typeof this.entriesRepository.findDuplicateCandidates === 'function') {
+      const candidates = await this.entriesRepository.findDuplicateCandidates(
+        entry.text,
+        EntryStatus.PUBLISHED
+      );
+      const hasDuplicate = candidates.some((c) => normalize(c.text) === normalizedInput);
+      return hasDuplicate ? RuleResult.WARN : RuleResult.PASS;
     }
-    const existing = await this.entriesRepository.findByTextAndStatus(entry.text, EntryStatus.PUBLISHED);
-    return existing ? RuleResult.WARN : RuleResult.PASS;
+
+    if (typeof this.entriesRepository.findByTextAndStatus === 'function') {
+      const existing = await this.entriesRepository.findByTextAndStatus(entry.text, EntryStatus.PUBLISHED);
+      return existing ? RuleResult.WARN : RuleResult.PASS;
+    }
+
+    return RuleResult.PASS;
   }
 }
 

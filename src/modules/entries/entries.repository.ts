@@ -307,6 +307,31 @@ export class EntriesRepository {
     const doc = await EntryModel.findOne({ text, status });
     return doc ? this.mapDocument(doc) : null;
   }
+
+  private escapeRegExp(string: string): string {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  async findDuplicateCandidates(text: string, status: EntryStatus): Promise<Entry[]> {
+    try {
+      // Use the text index search to find potential duplicates
+      const docs = await EntryModel.find(
+        { status, $text: { $search: text } },
+        { score: { $meta: 'textScore' } }
+      )
+        .sort({ score: { $meta: 'textScore' } })
+        .limit(20);
+      return docs.map((doc) => this.mapDocument(doc));
+    } catch (error) {
+      // Fallback to case-insensitive match on the full text if text search is not available
+      const cleanText = this.escapeRegExp(text);
+      const docs = await EntryModel.find({
+        status,
+        text: { $regex: new RegExp(`^${cleanText}$`, 'i') }
+      }).limit(10);
+      return docs.map((doc) => this.mapDocument(doc));
+    }
+  }
 }
 
 export default EntriesRepository;

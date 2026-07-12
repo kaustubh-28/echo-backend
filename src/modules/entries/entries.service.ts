@@ -30,7 +30,10 @@ export class EntriesService {
     private readonly notificationDispatcher: NotificationDispatcher,
   ) {
     this.moderationEngine = new ModerationEngine();
-    this.moderationWorkflow = new ModerationWorkflow();
+    this.moderationWorkflow = new ModerationWorkflow(
+      this.moderationEngine,
+      this.notificationDispatcher,
+    );
   }
 
   async createEntry(dto: CreateEntryDto, req: Request): Promise<Entry> {
@@ -59,41 +62,8 @@ export class EntriesService {
       status: decision.status,
     });
 
-    // 4. ModerationWorkflow.transition() from null to the resolved status
-    const entryForTransition = { ...entry, status: null } as unknown as Entry;
-
-    let action = ModerationAction.AUTO_APPROVED;
-    if (decision.status === EntryStatus.REMOVED) {
-      action = ModerationAction.AUTO_REJECTED;
-    } else if (decision.status === EntryStatus.SHADOW_HIDDEN) {
-      action = ModerationAction.AUTO_HIDDEN;
-    }
-
-    const updatedEntry = await this.moderationWorkflow.transition(
-      entryForTransition,
-      decision.status,
-      action,
-      decision.reason || 'Automated evaluation complete',
-      null,
-      { confidence: decision.confidence, triggeredRules: decision.triggeredRules },
-    );
-
-    // 5. Dispatch submission received notification
-    if (updatedEntry.email) {
-      try {
-        await this.notificationDispatcher.submissionReceived(
-          updatedEntry.email,
-          updatedEntry.submissionId,
-          updatedEntry.text,
-        );
-      } catch (err) {
-        log.error(err, 'Background submission received email failure', {
-          submissionId: updatedEntry.submissionId,
-        });
-      }
-    }
-
-    return updatedEntry;
+    // 4. Delegate transition logging and notification handling to ModerationWorkflow
+    return this.moderationWorkflow.submit(entry, decision);
   }
 
   async getEntryById(id: string): Promise<Entry | null> {

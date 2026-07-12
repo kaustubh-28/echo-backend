@@ -1,24 +1,28 @@
 import { EntryModel } from '../entries/entries.model';
 import { ModerationLogModel } from './moderationLog.model';
-import { ModerationAction } from '@shared/types';
+import { ModerationAction, ModerationDecision } from '@shared/types';
 import { EntryStatus } from '../entries/entries.constants';
 import { NotificationDispatcher } from '../notifications/notificationDispatcher';
 import { ModerationEngine } from './moderationEngine';
 import { Types } from 'mongoose';
 import { Entry } from '../entries/entries.types';
+import { log } from '@shared/logger/requestContext';
 
 export class ModerationWorkflow {
   private readonly moderationEngine: ModerationEngine;
   private readonly notificationDispatcher: NotificationDispatcher;
 
-  constructor() {
-    this.moderationEngine = new ModerationEngine();
-    this.notificationDispatcher = new NotificationDispatcher();
+  constructor(
+    moderationEngine?: ModerationEngine,
+    notificationDispatcher?: NotificationDispatcher
+  ) {
+    this.moderationEngine = moderationEngine || new ModerationEngine();
+    this.notificationDispatcher = notificationDispatcher || new NotificationDispatcher();
   }
 
-  async submit(entry: Entry): Promise<Entry> {
-    // 1. Evaluate the entry
-    const decision = await this.moderationEngine.evaluate(entry);
+  async submit(entry: Entry, precomputedDecision?: ModerationDecision): Promise<Entry> {
+    // 1. Evaluate the entry if not precomputed
+    const decision = precomputedDecision || await this.moderationEngine.evaluate(entry);
     
     // Determine the action based on decision
     let action = ModerationAction.AUTO_APPROVED;
@@ -28,9 +32,9 @@ export class ModerationWorkflow {
       action = ModerationAction.AUTO_HIDDEN;
     }
 
-    // 2. Perform the initial transition
+    // 2. Perform the initial transition (from null status to resolved status)
     const updatedEntry = await this.transition(
-      entry,
+      { ...entry, status: null } as unknown as Entry,
       decision.status,
       action,
       decision.reason || 'Automated evaluation complete',
@@ -40,11 +44,17 @@ export class ModerationWorkflow {
 
     // 3. Dispatch the submission notification
     if (updatedEntry.email) {
-      await this.notificationDispatcher.submissionReceived(
-        updatedEntry.email,
-        updatedEntry.submissionId,
-        updatedEntry.text
-      );
+      try {
+        await this.notificationDispatcher.submissionReceived(
+          updatedEntry.email,
+          updatedEntry.submissionId,
+          updatedEntry.text
+        );
+      } catch (err) {
+        log.error(err, 'Background submission received email failure', {
+          submissionId: updatedEntry.submissionId,
+        });
+      }
     }
 
     return updatedEntry;
