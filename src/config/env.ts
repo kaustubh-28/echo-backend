@@ -16,7 +16,17 @@ const envSchema = z.object({
   RATE_LIMIT_MAX: z.coerce.number().default(100),
   VISITOR_HASH_SALT: z.string().min(1, 'VISITOR_HASH_SALT is required'),
   COOKIE_SIGNING_SECRET: z.string().min(1, 'COOKIE_SIGNING_SECRET is required'),
-  FRONTEND_URL: z.string().url('FRONTEND_URL must be a valid URL'),
+  FRONTEND_URL: z
+    .string()
+    .min(1, 'FRONTEND_URL is required')
+    .refine(
+      (val) => val.split(',').every((url) => {
+        const u = url.trim();
+        return u.startsWith('http://') || u.startsWith('https://');
+      }),
+      { message: 'FRONTEND_URL must contain valid HTTP/HTTPS URLs' }
+    )
+    .transform((val) => val.split(',').map((url) => url.trim().replace(/\/$/, ''))),
 });
 
 const parsed = envSchema.safeParse(process.env);
