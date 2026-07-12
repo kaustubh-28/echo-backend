@@ -7,7 +7,7 @@ Echo Backend is the REST API for Echo — an anonymous journaling platform. It i
 
 ---
 
-## ⚡ Quick Start
+## Quick Start
 
 ### 1. Environment Setup
 Copy the configuration template and set the required environment values:
@@ -35,7 +35,7 @@ docker compose -f docker-compose.dev.yml up --build
 
 ---
 
-## 🛠️ CLI Admin Management
+## CLI Admin Management
 
 We provide clean CLI scripts for managing the administrative accounts:
 
@@ -53,7 +53,7 @@ We provide clean CLI scripts for managing the administrative accounts:
 
 ---
 
-## 🏗️ Architecture Layout
+## Architecture Layout
 
 Features are encapsulated in cohesive business modules under `src/modules/`:
 * `modules/entries`: Public submissions, anonymous reporting, and helpful vote tracking.
@@ -64,7 +64,7 @@ Features are encapsulated in cohesive business modules under `src/modules/`:
 
 ---
 
-## 🧪 Developer Commands
+## Developer Commands
 
 | Script | Action |
 |---|---|
