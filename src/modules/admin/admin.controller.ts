@@ -19,11 +19,11 @@ export class AdminController {
       const ip = req.ip || req.socket.remoteAddress;
       const { admin, token } = await this.authService.login(username, password, ip);
 
-      // Set HTTP-only Lax cookie
+      // Set HTTP-only cookie, SameSite=None in production to support cross-site hosting
       res.cookie(ADMIN_COOKIE_NAME, token, {
         httpOnly: true,
         secure: env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: ADMIN_COOKIE_MAX_AGE_MS,
       });
 
@@ -40,7 +40,7 @@ export class AdminController {
       res.clearCookie(ADMIN_COOKIE_NAME, {
         httpOnly: true,
         secure: env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
       });
 
       sendSuccessResponse({ res, data: { success: true } });
@@ -116,10 +116,11 @@ export class AdminController {
       await this.authService.changePassword(adminId, currentPassword, newPassword);
 
       // Clear Lax cookie on change-password success
+      // Clear cookie on change-password success
       res.clearCookie(ADMIN_COOKIE_NAME, {
         httpOnly: true,
         secure: env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
       });
 
       sendSuccessResponse({ res, data: { success: true } });

@@ -11,7 +11,7 @@ export function createVisitorCookieMiddleware(visitorService: VisitorService): R
       res.cookie(VISITOR_COOKIE_NAME, visitor.visitorId, {
         httpOnly: true,
         signed: true,
-        sameSite: 'lax',
+        sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
         secure: env.NODE_ENV === 'production',
         maxAge: VISITOR_COOKIE_MAX_AGE_MS,
       });
